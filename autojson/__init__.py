@@ -23,7 +23,8 @@ class Proxy(Node):
         if not isinstance(where, int):
             raise NotImplementedError
         my_replacement = self._parent._replace_me(self._key)
-        my_replacement[where] = Array([None]*(where+1), my_replacement, where)
+        # the empty array will get expanded as the recursion bubbles up.
+        my_replacement[where] = Array([], my_replacement, where)
         return my_replacement[where]
 
 
@@ -51,8 +52,14 @@ class Terminal(Node):
 
 
 class Null(Terminal):
+    def __new__(cls, text, parent=None, key=None):
+        if parent is None:
+            return None
+        return super().__new__(cls)
+
+
     def __repr__(self):
-        return 'null' 
+        return 'null'
 
 
 class Array(Node, UserList):
@@ -60,15 +67,36 @@ class Array(Node, UserList):
         super().__init__(parent, key, [create(x, self, i) for i, x in enumerate(items)])
 
 
+    def __iter__(self):
+        # Needed for copying instances.
+        # Because of the auto-creation, the default implementation would
+        # be an infinite loop. This happens because collections.abc.Sequence
+        # implements a mixin `__iter__` with a while loop, rather than
+        # counting elements ahead of time with `__len__` - even though
+        # `Sequence` demands that `__len__` is available.
+        yield from self.data
+
+
     def _replace_me(self, where):
         self[where] = []
         return self[where]
 
 
+    def _ensure(self, amount):
+        self.data += [Null(self, i) for i in range(len(self.data), amount+1)]
+
+
+    def __getitem__(self, key):
+        if not isinstance(key, int):
+            raise NotImplementedError # TODO: slices
+        self._ensure(key)
+        return self.data[key]
+
+
     def __setitem__(self, key, value):
         if isinstance(key, int):
             count = len(self.data)
-            self.data += [Null(self, i) for i in range(count, key+1)]
+            self._ensure(key)
             self.data[key] = create(value, self, key)
         else:
             raise NotImplementedError
