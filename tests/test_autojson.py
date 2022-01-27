@@ -29,7 +29,7 @@ def test_repr():
 
 
 def test_bad_root():
-    assert create(None) is None
+    assert repr(create(None)) == 'null'
     test = create('test')
     assert test == 'test' and type(test) is str
 

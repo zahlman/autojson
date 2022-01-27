@@ -52,19 +52,27 @@ class Terminal(Node):
 
 
 class Null(Terminal):
-    def __new__(cls, text, parent=None, key=None):
+    def __new__(cls, parent=None, key=None):
         if parent is None:
-            return None
+            if not hasattr(Null, '_default'):
+                # set up a singleton instance that behaves like None
+                # but has the right __repr__ for our purposes.
+                Null._default = super().__new__(cls)
+            return Null._default
         return super().__new__(cls)
 
 
     def __repr__(self):
         return 'null'
+Null._default = Null(None, None) # before anything else gets a chance
+MyNull = Null._default
 
 
 class Array(Node, UserList):
     def __init__(self, items, parent=None, key=None):
-        super().__init__(parent, key, [create(x, self, i) for i, x in enumerate(items)])
+        # copy subtree and ensure list type for storage.
+        data = [create(x, self, i) for i, x in enumerate(items)]
+        super().__init__(parent, key, data)
 
 
     def __iter__(self):
@@ -83,21 +91,21 @@ class Array(Node, UserList):
 
 
     def _ensure(self, amount):
-        self.data += [Null(self, i) for i in range(len(self.data), amount+1)]
+        self.data += [MyNull] * (amount + 1 - len(self.data))
 
 
     def __getitem__(self, key):
         if not isinstance(key, int):
             raise NotImplementedError # TODO: slices
         self._ensure(key)
-        return self.data[key]
+        return _wrap(self.data[key], self, key)
 
 
     def __setitem__(self, key, value):
         if isinstance(key, int):
             count = len(self.data)
             self._ensure(key)
-            self.data[key] = create(value, self, key)
+            self.data[key] = create(value, self, key) # copy subtree
         else:
             raise NotImplementedError
 
@@ -126,11 +134,19 @@ class String(Terminal, UserString):
         super().__init__(parent, key, text)
 
 
-def create(data, parent=None, key=None):
-    if data is None or isinstance(data, Null):
+def _wrap(data, parent=None, key=None):
+    if data in (None, MyNull):
         return Null(parent, key)
     if isinstance(data, str):
-        return String(data, parent, key)
+        return String(parent, key)
+    return data
+
+
+def create(data, parent=None, key=None):
+    if data is None or isinstance(data, Null):
+        return MyNull 
+    if isinstance(data, str):
+        return data
     if isinstance(data, Iterable):
         return Array(data, parent, key)
     raise TypeError(f"can't make JSON from {data} of type {type(data)}")
