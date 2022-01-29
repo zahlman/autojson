@@ -124,16 +124,7 @@ class Array(Node, UserList):
 
 
 class String(Terminal, UserString):
-    def __new__(cls, text, parent=None, key=None):
-        if parent is None:
-            return str(text)
-        return super().__new__(cls)
-
-
-    def __init__(self, text, parent=None, key=None):
-        assert parent is not None
-        assert isinstance(text, str)
-        super().__init__(parent, key, text)
+    pass
 
 
 def _wrap(data, parent=None, key=None):
