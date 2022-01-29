@@ -97,8 +97,10 @@ class Array(Node, UserList):
     def __getitem__(self, key):
         if not isinstance(key, int):
             raise NotImplementedError # TODO: slices
-        self._ensure(key)
-        return _wrap(self.data[key], self, key)
+        try:
+            return _wrap(self.data[key], self, key)
+        except IndexError:
+            return Proxy(self, key)
 
 
     def __setitem__(self, key, value):

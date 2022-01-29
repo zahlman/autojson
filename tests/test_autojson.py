@@ -39,3 +39,9 @@ def test_populate():
     x[3] = 'three'
     x[5] = 'five'
     assert str(x) == "[null, null, null, 'three', null, 'five']"
+
+
+def test_get_no_mutate():
+    x = create([])
+    x[0][0][0][0]
+    assert str(x) == "[]"
