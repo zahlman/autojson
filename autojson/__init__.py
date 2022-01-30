@@ -52,20 +52,9 @@ class Terminal(Node):
 
 
 class Null(Terminal):
-    def __new__(cls, parent=None, key=None):
-        if parent is None:
-            if not hasattr(Null, '_default'):
-                # set up a singleton instance that behaves like None
-                # but has the right __repr__ for our purposes.
-                Null._default = super().__new__(cls)
-            return Null._default
-        return super().__new__(cls)
-
-
+    # represents None.
     def __repr__(self):
         return 'null'
-Null._default = Null(None, None) # before anything else gets a chance
-MyNull = Null._default
 
 
 class Array(Node, UserList):
@@ -91,7 +80,7 @@ class Array(Node, UserList):
 
 
     def _ensure(self, amount):
-        self.data += [MyNull] * (amount + 1 - len(self.data))
+        self.data += [None] * (amount + 1 - len(self.data))
 
 
     def __getitem__(self, key):
@@ -112,10 +101,12 @@ class Array(Node, UserList):
             raise NotImplementedError
 
 
-    # Ugly workaround so the wrapper appears for __repr__ only
-    # and only at the top level. Need to clone in Object.
     def __str__(self):
-        return UserList.__repr__(self)
+        contents = ', '.join(
+            'null' if x is None else repr(x)
+            for x in self.data
+        )
+        return f'[{contents}]'
 
 
     def __repr__(self):
@@ -128,7 +119,7 @@ class String(Terminal, UserString):
 
 
 def _wrap(data, parent=None, key=None):
-    if data in (None, MyNull):
+    if data is None:
         return Null(parent, key)
     if isinstance(data, str):
         return String(parent, key)
@@ -136,9 +127,7 @@ def _wrap(data, parent=None, key=None):
 
 
 def create(data, parent=None, key=None):
-    if data is None or isinstance(data, Null):
-        return MyNull 
-    if isinstance(data, str):
+    if isinstance(data, str) or data is None:
         return data
     if isinstance(data, Iterable):
         return Array(data, parent, key)

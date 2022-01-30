@@ -1,7 +1,7 @@
 from pytest import raises
 from pytest import mark
 parametrize, xfail = mark.parametrize, mark.xfail
-from autojson import __version__, create, Null
+from autojson import __version__, create
 
 
 def test_version():
@@ -29,7 +29,7 @@ def test_repr():
 
 
 def test_bad_root():
-    assert repr(create(None)) == 'null'
+    assert create(None) is None 
     test = create('test')
     assert test == 'test' and type(test) is str
 
